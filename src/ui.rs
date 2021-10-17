@@ -111,7 +111,7 @@ impl<W: Write> Ui<W> {
 
         let (min, max) = (self.min_bar_value, self.max_bar_value);
 
-        for (i, datapoint) in shown_datapoints.iter().enumerate() {
+        for (i, datapoint) in shown_datapoints.iter().rev().enumerate() {
             let virtual_term_height = 8.0 * area.height as f64;
             let scaled_value = map_range(datapoint.value, min, max, 0.0, virtual_term_height);
 

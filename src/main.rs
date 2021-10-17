@@ -36,6 +36,7 @@ pub struct Datapoint {
     pub timestamp: Instant,
     pub value: f64,
     pub index: usize,
+    pub failed: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -44,37 +45,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stdout = io::stdout();
     let mut ui = Ui::new(stdout);
 
-    let mut datapoints = (0..=500)
-        .into_iter()
-        .map(|i| Datapoint {
-            timestamp: Instant::now(),
-            value: (i as f64 / 10.0 + 1.0).cos(),
-            index: i as usize,
-        })
-        .collect::<VecDeque<_>>();
+    const MAX_STORED_DATAPOINTS: usize = 500;
+    let mut datapoints = VecDeque::with_capacity(MAX_STORED_DATAPOINTS);
 
-    for _i in 0..datapoints.len() {
+    let ip = IpAddr::from_str(&opt.address)?;
+    let delay = Duration::from_millis(opt.delay);
+
+    let mut index = 0;
+    loop {
+        let ping_result = measure_ping(ip);
+        let datapoint = Datapoint {
+            index,
+            timestamp: Instant::now(),
+            failed: ping_result.is_err(),
+            value: ping_result.map(|d| d.as_millis()).unwrap_or_default() as f64,
+        };
+
+        if datapoints.len() >= MAX_STORED_DATAPOINTS {
+            datapoints.pop_back();
+        }
+
+        datapoints.push_front(datapoint);
+
         ui.repaint(datapoints.iter())?;
         ui.flush()?;
-        thread::sleep(Duration::from_millis(100));
-        datapoints.pop_front();
+
+        index += 1;
+        thread::sleep(delay);
     }
+}
 
-    Ok(())
+fn measure_ping(ip: IpAddr) -> Result<Duration, Box<dyn std::error::Error>> {
+    let now = Instant::now();
+    ping::ping(ip, Some(Duration::from_secs(1)), None, None, None, None)?;
+    let elapsed = now.elapsed();
 
-    // let ip = IpAddr::from_str(&opt.address)?;
-    // let delay = Duration::from_millis(opt.delay);
-
-    // loop {
-    //     let now = Instant::now();
-    //     let result = ping::ping(ip, Some(Duration::from_secs(1)), None, None, None, None);
-    //     let elapsed = now.elapsed().as_millis();
-
-    //     match result {
-    //         Ok(_) => println!("{} ms", elapsed),
-    //         Err(e) => println!("error: {:?}", e),
-    //     }
-
-    //     thread::sleep(delay);
-    // }
+    Ok(elapsed)
 }
