@@ -1,3 +1,4 @@
+use crossterm::style::Color;
 use std::collections::VecDeque;
 use std::io::{self, Write};
 use std::net::IpAddr;
@@ -36,10 +37,22 @@ struct Options {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Datapoint {
-    pub timestamp: Instant,
+    pub timestamp: chrono::DateTime<chrono::Local>,
     pub value: f64,
     pub index: usize,
     pub failed: bool,
+}
+
+impl Datapoint {
+    pub fn color(&self) -> Color {
+        if self.value < BAR_CHART_YELLOW_START {
+            Color::Green
+        } else if self.value < BAR_CHART_RED_START {
+            Color::Yellow
+        } else {
+            Color::DarkRed
+        }
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -59,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ping_result = measure_ping(ip);
         let datapoint = Datapoint {
             index,
-            timestamp: Instant::now(),
+            timestamp: chrono::offset::Local::now(),
             failed: ping_result.is_err(),
             value: ping_result.map(|d| d.as_millis()).unwrap_or_default() as f64,
         };
