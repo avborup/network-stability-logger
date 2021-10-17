@@ -1,14 +1,14 @@
 // Disclaimer: this module is heavily inspired by the tui-rs crate.
-use std::{
-    cmp::{self, Ordering},
-    io::{self, Write},
-};
-
+use crate::{BAR_CHART_RED_START, BAR_CHART_YELLOW_START};
 use crossterm::{
     cursor::{Hide, MoveTo},
     execute, queue,
     style::{Attribute, Color, Print, SetAttribute, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
+};
+use std::{
+    cmp::{self, Ordering},
+    io::{self, Write},
 };
 
 use crate::Datapoint;
@@ -36,7 +36,7 @@ impl<W: Write> Ui<W> {
     pub fn new(buffer: W) -> Self {
         return Self {
             buffer,
-            max_bar_value: 0.0,
+            max_bar_value: BAR_CHART_RED_START,
             min_bar_value: 0.0,
         };
     }
@@ -114,6 +114,16 @@ impl<W: Write> Ui<W> {
         for (i, datapoint) in shown_datapoints.iter().rev().enumerate() {
             let virtual_term_height = 8.0 * area.height as f64;
             let scaled_value = map_range(datapoint.value, min, max, 0.0, virtual_term_height);
+
+            let color = if datapoint.value < BAR_CHART_YELLOW_START {
+                Color::Green
+            } else if datapoint.value < BAR_CHART_RED_START {
+                Color::Yellow
+            } else {
+                Color::DarkRed
+            };
+
+            queue!(self.buffer, SetForegroundColor(color))?;
 
             for x_offset in 0..BAR_WIDTH {
                 let term_x = x_offset + area.left() + i as u16 * (BAR_WIDTH + BAR_GAP);

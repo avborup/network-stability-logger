@@ -9,6 +9,9 @@ use ui::Ui;
 
 mod ui;
 
+const BAR_CHART_YELLOW_START: f64 = 25.0;
+const BAR_CHART_RED_START: f64 = 75.0;
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "Network Stability Logger",
