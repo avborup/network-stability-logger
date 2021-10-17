@@ -1,7 +1,12 @@
 use crossterm::style::Color;
+use log::{info, LevelFilter};
+use simplelog::WriteLogger;
 use std::collections::VecDeque;
+use std::fmt;
+use std::fs;
 use std::io::{self, Write};
 use std::net::IpAddr;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -33,13 +38,20 @@ struct Options {
         help = "The delay time between each ping in milliseconds"
     )]
     delay: u64,
+
+    #[structopt(
+        parse(from_os_str),
+        short = "o",
+        long = "output",
+        help = "Path to a file where log output should be written"
+    )]
+    output_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Datapoint {
     pub timestamp: chrono::DateTime<chrono::Local>,
     pub value: f64,
-    pub index: usize,
     pub failed: bool,
 }
 
@@ -63,8 +75,27 @@ impl Datapoint {
     }
 }
 
+impl fmt::Display for Datapoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}: {}",
+            self.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
+            self.value_str()
+        )
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Options::from_args();
+
+    if let Some(output_path) = opt.output_path {
+        WriteLogger::init(
+            LevelFilter::Info,
+            simplelog::Config::default(),
+            fs::File::create(output_path)?,
+        )?;
+    }
 
     let stdout = io::stdout();
     let mut ui = Ui::new(stdout);
@@ -75,15 +106,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ip = IpAddr::from_str(&opt.address)?;
     let delay = Duration::from_millis(opt.delay);
 
-    let mut index = 0;
     loop {
         let ping_result = measure_ping(ip);
         let datapoint = Datapoint {
-            index,
             timestamp: chrono::offset::Local::now(),
             failed: ping_result.is_err(),
             value: ping_result.map(|d| d.as_millis()).unwrap_or_default() as f64,
         };
+
+        info!("{}", datapoint);
 
         if datapoints.len() >= MAX_STORED_DATAPOINTS {
             datapoints.pop_back();
@@ -94,7 +125,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ui.repaint(datapoints.iter())?;
         ui.flush()?;
 
-        index += 1;
         thread::sleep(delay);
     }
 }
