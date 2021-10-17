@@ -45,12 +45,20 @@ pub struct Datapoint {
 
 impl Datapoint {
     pub fn color(&self) -> Color {
-        if self.value < BAR_CHART_YELLOW_START {
-            Color::Green
-        } else if self.value < BAR_CHART_RED_START {
+        if self.value >= BAR_CHART_RED_START || self.failed {
+            Color::DarkRed
+        } else if self.value >= BAR_CHART_YELLOW_START {
             Color::Yellow
         } else {
-            Color::DarkRed
+            Color::Green
+        }
+    }
+
+    pub fn value_str(&self) -> String {
+        if !self.failed {
+            format!("{} ms", self.value)
+        } else {
+            String::from("X")
         }
     }
 }

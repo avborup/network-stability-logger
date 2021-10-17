@@ -90,19 +90,19 @@ impl<W: Write> Ui<W> {
     }
 
     fn calc_bar_chart_metadata(bcmd: &mut BarChartMetaData, datapoints: &[&Datapoint]) {
-        if datapoints.is_empty() {
+        let filtered = datapoints.iter().filter(|d| !d.failed).collect::<Vec<_>>();
+
+        if filtered.is_empty() {
             return;
         }
 
-        let max = datapoints
+        let max = filtered
             .iter()
-            .filter(|d| !d.failed)
             .map(|d| d.value)
             .max_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal))
             .unwrap();
-        let min = datapoints
+        let min = filtered
             .iter()
-            .filter(|d| !d.failed)
             .map(|d| d.value)
             .min_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal))
             .unwrap();
@@ -145,10 +145,20 @@ impl<W: Write> Ui<W> {
         let max = self.bar_chart_meta_data.max_bar_value;
 
         for (i, datapoint) in shown_datapoints.iter().rev().enumerate() {
+            queue!(self.buffer, SetForegroundColor(datapoint.color()))?;
+
+            if datapoint.failed {
+                let x = BAR_WIDTH / 2 + area.left() + i as u16 * (BAR_WIDTH + BAR_GAP);
+                queue!(
+                    self.buffer,
+                    MoveTo(x, area.bottom()),
+                    Print(datapoint.value_str())
+                )?;
+                continue;
+            }
+
             let virtual_term_height = 8.0 * area.height as f64;
             let scaled_value = map_range(datapoint.value, min, max, 0.0, virtual_term_height);
-
-            queue!(self.buffer, SetForegroundColor(datapoint.color()))?;
 
             for x_offset in 0..BAR_WIDTH {
                 let term_x = x_offset + area.left() + i as u16 * (BAR_WIDTH + BAR_GAP);
@@ -207,7 +217,7 @@ impl<W: Write> Ui<W> {
                 Print(datapoint.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")),
                 MoveTo(area.left(), y + 1),
                 SetForegroundColor(datapoint.color()),
-                Print(format!("{} ms", datapoint.value)),
+                Print(datapoint.value_str()),
             )?;
         }
 
