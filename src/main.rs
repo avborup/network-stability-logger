@@ -73,16 +73,15 @@ impl Datapoint {
             String::from("X")
         }
     }
+
+    pub fn time_str(&self) -> String {
+        self.timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
+    }
 }
 
 impl fmt::Display for Datapoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}: {}",
-            self.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
-            self.value_str()
-        )
+        write!(f, "{}: {}", self.time_str(), self.value_str())
     }
 }
 

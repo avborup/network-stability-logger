@@ -217,8 +217,8 @@ impl<W: Write> Ui<W> {
             Print(format!("Min: {}", min_val_str)),
         )?;
 
-        const ITEM_HEIGHT: u16 = 2;
-        const ITEM_GAP: u16 = 1;
+        const ITEM_HEIGHT: u16 = 1;
+        const ITEM_GAP: u16 = 0;
         const INFO_HEIGHT: u16 = 3;
 
         let num_items = (area.height - INFO_HEIGHT) / (ITEM_HEIGHT + ITEM_GAP);
@@ -229,8 +229,8 @@ impl<W: Write> Ui<W> {
                 self.buffer,
                 MoveTo(area.left(), y),
                 SetForegroundColor(Color::Reset),
-                Print(datapoint.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")),
-                MoveTo(area.left(), y + 1),
+                Print(datapoint.time_str()),
+                Print(' '),
                 SetForegroundColor(datapoint.color()),
                 Print(datapoint.value_str()),
             )?;
