@@ -57,14 +57,17 @@ impl<W: Write> Ui<W> {
     {
         self.clear()?;
 
-        let areas = self
-            .full_terminal_area()?
-            .horizontal_split_percentages(&[0.8, 0.2]);
+        let full_area = self.full_terminal_area()?;
+        let info_width = "2021-10-19 11:53:04.035 000 ms".len() as u16;
+        let info_area = full_area
+            .with_width(info_width)
+            .with_x(full_area.right() - info_width);
+        let chart_area = full_area.with_width(info_area.left());
 
         let v = datapoints.collect::<Vec<_>>();
         Self::calc_bar_chart_metadata(&mut self.bar_chart_meta_data, &v);
-        self.draw_bar_chart(v.iter().map(|d| *d), areas[0])?;
-        self.draw_data_info(v.iter().map(|d| *d), areas[1])?;
+        self.draw_bar_chart(v.iter().map(|d| *d), chart_area)?;
+        self.draw_data_info(v.iter().map(|d| *d), info_area)?;
 
         queue!(
             self.buffer,
@@ -265,22 +268,22 @@ impl Rect {
         self.y.saturating_add(self.height)
     }
 
-    pub fn horizontal_split_percentages(&self, pcts: &[f32]) -> Vec<Rect> {
-        let mut out = Vec::with_capacity(pcts.len());
-        let mut x = self.x;
-
-        for pct in pcts {
-            let rect = Rect {
-                x,
-                y: self.y,
-                height: self.height,
-                width: (self.width as f32 * pct) as u16,
-            };
-            x += rect.width;
-            out.push(rect);
+    pub fn with_width(&self, width: u16) -> Rect {
+        Rect {
+            x: self.x,
+            y: self.y,
+            height: self.height,
+            width,
         }
+    }
 
-        out
+    pub fn with_x(&self, x: u16) -> Rect {
+        Rect {
+            x,
+            y: self.y,
+            height: self.height,
+            width: self.width,
+        }
     }
 }
 
