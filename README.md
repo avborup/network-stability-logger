@@ -4,6 +4,11 @@ A simple CLI tool that continuously pings an IP address and shows the roundtrip 
 ## Demo
 ![](https://i.imgur.com/faPkxua.gif)
 
+Note: since I made this screen recording, the format has changed slightly:
+
+![image](https://user-images.githubusercontent.com/16561050/137892547-b7b02ecb-30dd-4b66-b76f-0ae62c0d4526.png)
+
+
 *Hopefully your internet connection is not as poor as the one in this demo!*
 
 ## Installation
