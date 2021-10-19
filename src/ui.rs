@@ -1,5 +1,5 @@
 // Disclaimer: this module is heavily inspired by the tui-rs crate.
-use crate::BAR_CHART_RED_START;
+use crate::{BAR_CHART_RED_START, BAR_CHART_YELLOW_START};
 use crossterm::{
     cursor::{Hide, MoveTo},
     execute, queue,
@@ -43,7 +43,7 @@ impl<W: Write> Ui<W> {
         return Self {
             buffer,
             bar_chart_meta_data: BarChartMetaData {
-                max_bar_value: BAR_CHART_RED_START,
+                max_bar_value: BAR_CHART_RED_START + 2.0,
                 min_bar_value: 0.0,
                 max_seen_value: None,
                 min_seen_value: None,
@@ -144,6 +144,21 @@ impl<W: Write> Ui<W> {
         let min = self.bar_chart_meta_data.min_bar_value;
         let max = self.bar_chart_meta_data.max_bar_value;
 
+        queue!(self.buffer, SetForegroundColor(Color::Grey))?;
+        for y in [BAR_CHART_YELLOW_START, BAR_CHART_RED_START] {
+            let virtual_term_height = 8.0 * area.height as f64;
+            let scaled_value = map_range(y, min, max, 0.0, virtual_term_height);
+            let term_y = area.bottom() - (scaled_value / 8.0).ceil() as u16;
+
+            queue!(
+                self.buffer,
+                MoveTo(area.left(), term_y),
+                Print("⠁".repeat((area.right() - area.left() - 1) as usize)),
+                MoveTo(area.left(), term_y - 1),
+                Print(format!("{} ms", y)),
+            )?;
+        }
+
         for (i, datapoint) in shown_datapoints.iter().rev().enumerate() {
             queue!(self.buffer, SetForegroundColor(datapoint.color()))?;
 
@@ -236,6 +251,10 @@ struct Rect {
 impl Rect {
     pub fn left(&self) -> u16 {
         self.x
+    }
+
+    pub fn right(self) -> u16 {
+        self.x.saturating_add(self.width)
     }
 
     pub fn top(self) -> u16 {
