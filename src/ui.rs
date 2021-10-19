@@ -140,7 +140,7 @@ impl<W: Write> Ui<W> {
         let min = self.bar_chart_meta_data.min_bar_value;
         let max = self.bar_chart_meta_data.max_bar_value;
 
-        queue!(self.buffer, SetForegroundColor(Color::Grey))?;
+        queue!(self.buffer, SetForegroundColor(Color::DarkGrey))?;
         for y in [BAR_CHART_YELLOW_START, BAR_CHART_RED_START] {
             let virtual_term_height = 8.0 * area.height as f64;
             let scaled_value = map_range(y, min, max, 0.0, virtual_term_height);
@@ -231,7 +231,7 @@ impl<W: Write> Ui<W> {
             queue!(
                 self.buffer,
                 MoveTo(area.left(), y),
-                SetForegroundColor(Color::Reset),
+                SetForegroundColor(Color::DarkGrey),
                 Print(datapoint.time_str()),
                 Print(' '),
                 SetForegroundColor(datapoint.color()),
