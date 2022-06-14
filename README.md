@@ -21,3 +21,5 @@ There are no mandatory arguments. To see all options (IP address to ping, log ou
 ```
 network-stability-logger --help
 ```
+
+If you're on Linux or macOS and the program purely outputs red Xs, you may have to run it with `sudo` - see https://github.com/avborup/network-stability-logger/issues/1.
